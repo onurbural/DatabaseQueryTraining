@@ -1,0 +1,82 @@
+CREATE DATABASE ONURTEST
+
+USE ONURTEST
+
+
+CREATE TABLE Categories(
+	CategoryID int primary key,
+	CategoryName nvarchar(MAX)
+);
+
+CREATE TABLE SubCategories(
+	SubCategoryID INT PRIMARY KEY,
+    SubCategoryName NVARCHAR(100),
+    ParentCategoryID INT,
+    FOREIGN KEY (ParentCategoryID) REFERENCES Categories(CategoryID)
+);
+
+
+
+
+DECLARE @CategoryID INT = 1;
+WHILE @CategoryID <= 10 -- 10 adet kategori ekleyelim
+BEGIN
+    INSERT INTO Categories (CategoryID, CategoryName)
+    VALUES (@CategoryID, 'Category ' + CAST(@CategoryID AS NVARCHAR(10)));
+
+    SET @CategoryID = @CategoryID + 1;
+END
+
+-- SubCategories tablosuna sahte veriler ekleyelim
+DECLARE @SubCategoryID INT = 1;
+DECLARE @ParentCategoryID INT;
+WHILE @SubCategoryID <= 2000 -- 2000 adet alt kategori ekleyelim
+BEGIN
+    -- Rastgele bir ParentCategoryID seçelim
+    SET @ParentCategoryID = (SELECT TOP 1 CategoryID FROM Categories ORDER BY NEWID());
+
+    INSERT INTO SubCategories (SubCategoryID, SubCategoryName, ParentCategoryID)
+    VALUES (@SubCategoryID, 'SubCategory ' + CAST(@SubCategoryID AS NVARCHAR(10)), @ParentCategoryID);
+
+    SET @SubCategoryID = @SubCategoryID + 1;
+END
+
+
+
+
+
+
+CREATE PROCEDURE test3
+    @CategoryID INT
+AS
+BEGIN
+    WITH CategoryHierarchy AS
+    (
+        -- Ana kategoriyi seç
+        SELECT 
+            c.CategoryID AS ID,
+            CAST(c.CategoryName AS NVARCHAR(MAX)) AS Name, -- Veri tipini NVARCHAR(MAX) olarak belirle
+            NULL AS ParentCategoryID,
+            CAST(c.CategoryName AS NVARCHAR(MAX)) AS FullPath, 
+            0 AS Level
+        FROM Categories c
+        WHERE c.CategoryID = @CategoryID
+
+        UNION ALL
+
+        -- Alt kategorileri seç
+        SELECT 
+            s.SubCategoryID AS ID,
+            CAST(s.SubCategoryName AS NVARCHAR(MAX)) AS Name, -- Veri tipini NVARCHAR(MAX) olarak belirle
+            s.ParentCategoryID,
+            CAST(ch.FullPath + ' -> ' + s.SubCategoryName AS NVARCHAR(MAX)) AS FullPath,
+            ch.Level + 1
+        FROM SubCategories s
+        INNER JOIN CategoryHierarchy ch ON s.ParentCategoryID = ch.ID
+    )
+    -- Sonuçları döndür ve Level'a göre sırala
+    SELECT * FROM CategoryHierarchy
+END;
+
+
+EXEC test3 3;
