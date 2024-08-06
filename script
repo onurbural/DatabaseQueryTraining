@@ -19,7 +19,7 @@ CREATE TABLE SubCategories(
 
 
 DECLARE @CategoryID INT = 1;
-WHILE @CategoryID <= 10 -- 10 adet kategori ekleyelim
+WHILE @CategoryID <= 10 
 BEGIN
     INSERT INTO Categories (CategoryID, CategoryName)
     VALUES (@CategoryID, 'Category ' + CAST(@CategoryID AS NVARCHAR(10)));
@@ -27,12 +27,10 @@ BEGIN
     SET @CategoryID = @CategoryID + 1;
 END
 
--- SubCategories tablosuna sahte veriler ekleyelim
 DECLARE @SubCategoryID INT = 1;
 DECLARE @ParentCategoryID INT;
-WHILE @SubCategoryID <= 2000 -- 2000 adet alt kategori ekleyelim
+WHILE @SubCategoryID <= 2000 
 BEGIN
-    -- Rastgele bir ParentCategoryID seçelim
     SET @ParentCategoryID = (SELECT TOP 1 CategoryID FROM Categories ORDER BY NEWID());
 
     INSERT INTO SubCategories (SubCategoryID, SubCategoryName, ParentCategoryID)
@@ -52,10 +50,9 @@ AS
 BEGIN
     WITH CategoryHierarchy AS
     (
-        -- Ana kategoriyi seç
         SELECT 
             c.CategoryID AS ID,
-            CAST(c.CategoryName AS NVARCHAR(MAX)) AS Name, -- Veri tipini NVARCHAR(MAX) olarak belirle
+            CAST(c.CategoryName AS NVARCHAR(MAX)) AS Name,
             NULL AS ParentCategoryID,
             CAST(c.CategoryName AS NVARCHAR(MAX)) AS FullPath, 
             0 AS Level
@@ -64,17 +61,15 @@ BEGIN
 
         UNION ALL
 
-        -- Alt kategorileri seç
         SELECT 
             s.SubCategoryID AS ID,
-            CAST(s.SubCategoryName AS NVARCHAR(MAX)) AS Name, -- Veri tipini NVARCHAR(MAX) olarak belirle
+            CAST(s.SubCategoryName AS NVARCHAR(MAX)) AS Name, 
             s.ParentCategoryID,
             CAST(ch.FullPath + ' -> ' + s.SubCategoryName AS NVARCHAR(MAX)) AS FullPath,
             ch.Level + 1
         FROM SubCategories s
         INNER JOIN CategoryHierarchy ch ON s.ParentCategoryID = ch.ID
     )
-    -- Sonuçları döndür ve Level'a göre sırala
     SELECT * FROM CategoryHierarchy
 END;
 
